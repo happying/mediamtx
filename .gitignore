@@ -5,3 +5,9 @@
 /internal/core/VERSION
 /internal/servers/hls/hls.min.js
 /internal/staticsources/rpicamera/mtxrpicam_*/
+test_server.sh
+mediamtx
+DEBUG_GUIDE.md
+debug.yml
+__debug_bin2797858638
+.vscode/launch.json

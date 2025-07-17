@@ -1,0 +1,92 @@
+# 测试流程配置文件
+logLevel: debug
+logDestinations: [stdout]
+
+# 启用API用于监控
+api: yes
+apiAddress: :9997
+
+# 启用监控
+metrics: yes
+metricsAddress: :9998
+
+# RTSP服务器配置
+rtsp: yes
+rtspAddress: :8554
+
+# RTMP服务器配置
+rtmp: yes
+rtmpAddress: :1935
+
+# HLS服务器配置
+hls: yes
+hlsAddress: :8888
+
+# 认证配置（允许所有用户）
+authMethod: internal
+authInternalUsers:
+- user: any
+  pass: ""
+  ips: []
+  permissions:
+  - action: publish
+    path: ""
+  - action: read
+    path: ""
+  - action: api
+    path: ""
+
+# 路径配置
+paths:
+  # 原始流路径（接收流）
+  raw_stream:
+    # 录制原始流
+    record: yes
+    recordPath: ./recordings/%path/%Y-%m-%d_%H-%M-%S-%f
+    
+    # 当流准备就绪时，启动处理脚本
+    runOnReady: |
+      sh -c '
+        echo "原始流准备就绪: $MTX_PATH"
+        echo "开始处理流..."
+        
+        # 启动处理脚本，将原始流处理后推送到processed_stream
+        ffmpeg -i rtsp://localhost:8554/raw_stream \
+               -c:v libx264 -preset fast -crf 23 \
+               -c:a aac -b:a 128k \
+               -f rtsp rtsp://localhost:8554/processed_stream &
+        
+        echo "处理脚本已启动"
+      '
+    
+    # 当流不可用时，停止处理
+    runOnNotReady: |
+      sh -c '
+        echo "原始流不可用: $MTX_PATH"
+        pkill -f "ffmpeg.*raw_stream"
+      '
+
+  # 处理后流路径（输出流）
+  processed_stream:
+    # 录制处理后的流
+    record: yes
+    recordPath: ./recordings/%path/%Y-%m-%d_%H-%M-%S-%f
+    
+    # 当流准备就绪时的通知
+    runOnReady: |
+      sh -c '
+        echo "处理后流准备就绪: $MTX_PATH"
+        echo "可以开始播放处理后的流"
+      '
+    
+    # 当流不可用时的通知
+    runOnNotReady: |
+      sh -c '
+        echo "处理后流不可用: $MTX_PATH"
+      '
+
+  # 测试路径（用于简单测试）
+  test:
+    # 录制测试流
+    record: yes
+    recordPath: ./recordings/%path/%Y-%m-%d_%H-%M-%S-%f 
